@@ -1,8 +1,11 @@
 package com.example.wenhuang.puzzlegame;
 
+import android.content.Context;
+
 import org.cocos2d.layers.CCLayer;
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
+import org.cocos2d.nodes.CCNode;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.opengl.CCBitmapFontAtlas;
 import org.cocos2d.types.CGPoint;
@@ -15,6 +18,21 @@ import org.cocos2d.utils.CCFormatter;
  */
 
 public class GameLayer extends CCLayer{
+    private static final int TILE_NODE_TAG = 23;  //keeps track of each tile on the scene
+    private static   float TILE_SQUARE_SIZE = 3;  //the height of each of our tiles
+    private static final int NUM_ROWS = 3;    //Number of rows our game would support
+    private static final int NUM_COLUMNS = 3;  // Number of colums supported
+    private int toppoint = 0 ;     //top cordinate from which we would start laying out our tiles
+    private int topleft = 0;
+    CCBitmapFontAtlas statusLabel ;    //status label
+    private static CGPoint emptyPosition ;   //keeps track of the position of the empty slot on our game
+    //float generalscalefactor = 0.0f ;     //a scaling factor to ensure our game looks good on diff screen sizes
+    private int moves = 0 ;                //number of moves
+    private Context appcontext;             //a reference to the android context variable
+    public static boolean gameover = false ;    //track if the game has been solved
+
+
+
 
     private static final int STATUS_LABEL_TAG = 20;
     private static final int TIMER_LABEL_TAG = 30;
@@ -73,7 +91,70 @@ public class GameLayer extends CCLayer{
         scene.addChild(layer);
         return scene;
     }
-//
+
+    public void generateTiles(){
+
+        //We create a Node element to hold all our tiles
+        CCNode tilesNode = CCNode.node();
+        tilesNode.setTag(TILE_NODE_TAG);
+        addChild(tilesNode);
+        float scalefactor ;   // a value we compute to help scale our tiles
+        int useableheight  ;
+        int tileIndex = 0 ;
+
+        //We attempt to calculate the right size for the tiles given the screen size and
+        //space left after adding the status label at the top
+        int nextval ;
+
+        int[] tileNumbers = {5,1,2,8,7,6,0,4,3};  //random but solvable sequence of numbers
+
+        //TILE_SQUARE_SIZE = (int) ((screenSize.height  *generalscalefactor)/NUM_ROWS) ;
+        int useablewidth = (int) (screenSize.width - statusLabel.getContentSize().width*generalscalefactor ) ;
+        useableheight =  (int) (screenSize.height  - 40*generalscalefactor - statusLabel.getContentSize().height * 1.3f*generalscalefactor) ;
+
+        TILE_SQUARE_SIZE = (int) Math.min((useableheight/NUM_ROWS) , (useablewidth/NUM_COLUMNS)) ;
+
+        toppoint = (int) (useableheight  - (TILE_SQUARE_SIZE / 2) + 30*generalscalefactor)   ;
+        scalefactor = TILE_SQUARE_SIZE / 150.0f ;
+
+        topleft = (int) ((TILE_SQUARE_SIZE / 2) + 15*generalscalefactor) ;
+
+        CCSprite tile = CCSprite.sprite("tile.png");
+        //CCSprite tilebox = CCSprite.sprite("tilebox.png");
+
+        for (int j = toppoint ; j > toppoint - (TILE_SQUARE_SIZE * NUM_ROWS); j-= TILE_SQUARE_SIZE){
+            for (int i = topleft ; i < (topleft - 5*generalscalefactor) + (TILE_SQUARE_SIZE * NUM_COLUMNS); i+= TILE_SQUARE_SIZE){ 				if (tileIndex >= (NUM_ROWS * NUM_COLUMNS)) {
+                break ;
+            }
+                nextval = tileNumbers[tileIndex ];
+                CCNodeExt eachNode =  new  CCNodeExt();
+                eachNode.setContentSize(tile.getContentSize());
+                //
+                //Layout Node based on calculated postion
+                eachNode.setPosition(i, j);
+                eachNode.setNodeText(nextval + "");
+
+                //Add Tile number
+                CCBitmapFontAtlas tileNumber = CCBitmapFontAtlas.bitmapFontAtlas ("00", "bionic.fnt");
+                tileNumber.setScale(1.4f);
+
+                eachNode.setScale(scalefactor);
+                eachNode.addChild(tile,1,1);
+                tileNumber.setString(nextval + "");
+                eachNode.addChild(tileNumber,2 );
+
+                if( nextval != 0){
+                    tilesNode.addChild(eachNode,1,nextval);
+                }else {
+                    emptyPosition = CGPoint.ccp(i, j);
+                }
+
+                //Add each Node to a HashMap to note its location
+                tileIndex++;
+            }
+        }
+
+    }
 
 }
 
