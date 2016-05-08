@@ -35,7 +35,7 @@ public class GameLayer extends CCLayer{
         scene.addChild(layer);
         return scene;
     }
-
+//
 
 }
 
