@@ -153,7 +153,7 @@ public class GameLayer extends CCLayer{
                 tileIndex++;
             }
         }
-
+//
     }
 
 }
