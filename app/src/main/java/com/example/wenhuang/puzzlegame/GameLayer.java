@@ -1,14 +1,22 @@
+///*
+
 package com.example.wenhuang.puzzlegame;
 
 import android.content.Context;
+import android.view.MotionEvent;
 
+import org.cocos2d.actions.instant.CCCallFuncN;
+import org.cocos2d.actions.interval.CCMoveTo;
+import org.cocos2d.actions.interval.CCSequence;
 import org.cocos2d.layers.CCLayer;
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.nodes.CCNode;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.opengl.CCBitmapFontAtlas;
+import org.cocos2d.sound.SoundEngine;
 import org.cocos2d.types.CGPoint;
+import org.cocos2d.types.CGRect;
 import org.cocos2d.types.CGSize;
 import org.cocos2d.types.ccColor3B;
 import org.cocos2d.utils.CCFormatter;
@@ -18,29 +26,32 @@ import org.cocos2d.utils.CCFormatter;
  */
 
 public class GameLayer extends CCLayer{
+
     private static final int TILE_NODE_TAG = 23;  //keeps track of each tile on the scene
     private static   float TILE_SQUARE_SIZE = 3;  //the height of each of our tiles
     private static final int NUM_ROWS = 3;    //Number of rows our game would support
     private static final int NUM_COLUMNS = 3;  // Number of colums supported
     private int toppoint = 0 ;     //top cordinate from which we would start laying out our tiles
     private int topleft = 0;
-    CCBitmapFontAtlas statusLabel ;    //status label
+    CCBitmapFontAtlas statusLabel;    //status label
     private static CGPoint emptyPosition ;   //keeps track of the position of the empty slot on our game
-    //float generalscalefactor = 0.0f ;     //a scaling factor to ensure our game looks good on diff screen sizes
+    float generalscalefactor = 0.0f ;     //a scaling factor to ensure our game looks good on diff screen sizes
     private int moves = 0 ;                //number of moves
     private Context appcontext;             //a reference to the android context variable
     public static boolean gameover = false ;    //track if the game has been solved
 
 
 
-
     private static final int STATUS_LABEL_TAG = 20;
-    private static final int TIMER_LABEL_TAG = 30;
-    private static final int MOVES_LABEL_TAG = 40;
+    private static final int TIMER_LABEL_TAG = 21;
+    private static final int MOVES_LABEL_TAG = 22;
     private static CGSize screenSize;
-    private static float generalscalefactor;
+    //private static float generalscalefactor;
     private static int thetime = 0;
+
     public GameLayer(){
+
+        this.setIsTouchEnabled(true);
 
         screenSize = CCDirector.sharedDirector().winSize();
         generalscalefactor = CCDirector.sharedDirector().winSize().height / 500 ;
@@ -51,7 +62,7 @@ public class GameLayer extends CCLayer{
         addChild(background,-5);
 
         // Add Game Status Label
-        CCBitmapFontAtlas statusLabel = CCBitmapFontAtlas.bitmapFontAtlas ("Tap Tiles to Begin", "bionic.fnt");
+        statusLabel = CCBitmapFontAtlas.bitmapFontAtlas ("Tap Tiles to Begin", "bionic.fnt");
         statusLabel.setScale(1.3f* generalscalefactor); //scaled
         statusLabel.setAnchorPoint(CGPoint.ccp(0,1));
         statusLabel.setPosition( CGPoint.ccp( 25* generalscalefactor , screenSize.height - 10* generalscalefactor));
@@ -74,6 +85,11 @@ public class GameLayer extends CCLayer{
         addChild(movesLabel,-2,MOVES_LABEL_TAG);
 
         schedule("updateTimeLabel", 1.0f);
+        generateTiles();
+
+
+
+
     }
 
     public void updateTimeLabel(float dt) {
@@ -92,42 +108,45 @@ public class GameLayer extends CCLayer{
         return scene;
     }
 
-    public void generateTiles(){
+
+
+    public void generateTiles() {
 
         //We create a Node element to hold all our tiles
         CCNode tilesNode = CCNode.node();
         tilesNode.setTag(TILE_NODE_TAG);
         addChild(tilesNode);
-        float scalefactor ;   // a value we compute to help scale our tiles
-        int useableheight  ;
-        int tileIndex = 0 ;
+        float scalefactor;   // a value we compute to help scale our tiles
+        int useableheight;
+        int tileIndex = 0;
 
         //We attempt to calculate the right size for the tiles given the screen size and
         //space left after adding the status label at the top
-        int nextval ;
+        int nextval;
 
-        int[] tileNumbers = {5,1,2,8,7,6,0,4,3};  //random but solvable sequence of numbers
+        int[] tileNumbers = {5, 1, 2, 8, 7, 6, 0, 4, 3};  //random but solvable sequence of numbers
 
         //TILE_SQUARE_SIZE = (int) ((screenSize.height  *generalscalefactor)/NUM_ROWS) ;
-        int useablewidth = (int) (screenSize.width - statusLabel.getContentSize().width*generalscalefactor ) ;
-        useableheight =  (int) (screenSize.height  - 40*generalscalefactor - statusLabel.getContentSize().height * 1.3f*generalscalefactor) ;
+        int useablewidth = (int) (screenSize.width - statusLabel.getContentSize().width * generalscalefactor);
+        useableheight = (int) (screenSize.height - 40 * generalscalefactor - statusLabel.getContentSize().height * 1.3f * generalscalefactor);
 
-        TILE_SQUARE_SIZE = (int) Math.min((useableheight/NUM_ROWS) , (useablewidth/NUM_COLUMNS)) ;
+        TILE_SQUARE_SIZE = (int) Math.min((useableheight / NUM_ROWS), (useablewidth / NUM_COLUMNS));
 
-        toppoint = (int) (useableheight  - (TILE_SQUARE_SIZE / 2) + 30*generalscalefactor)   ;
-        scalefactor = TILE_SQUARE_SIZE / 150.0f ;
+        toppoint = (int) (useableheight - (TILE_SQUARE_SIZE / 2) + 30 * generalscalefactor);
+        scalefactor = TILE_SQUARE_SIZE / 150.0f;
 
-        topleft = (int) ((TILE_SQUARE_SIZE / 2) + 15*generalscalefactor) ;
+        topleft = (int) ((TILE_SQUARE_SIZE / 2) + 15 * generalscalefactor);
 
         CCSprite tile = CCSprite.sprite("tile.png");
         //CCSprite tilebox = CCSprite.sprite("tilebox.png");
 
-        for (int j = toppoint ; j > toppoint - (TILE_SQUARE_SIZE * NUM_ROWS); j-= TILE_SQUARE_SIZE){
-            for (int i = topleft ; i < (topleft - 5*generalscalefactor) + (TILE_SQUARE_SIZE * NUM_COLUMNS); i+= TILE_SQUARE_SIZE){ 				if (tileIndex >= (NUM_ROWS * NUM_COLUMNS)) {
-                break ;
-            }
-                nextval = tileNumbers[tileIndex ];
-                CCNodeExt eachNode =  new  CCNodeExt();
+        for (int j = toppoint; j > toppoint - (TILE_SQUARE_SIZE * NUM_ROWS); j -= TILE_SQUARE_SIZE) {
+            for (int i = topleft; i < (topleft - 5 * generalscalefactor) + (TILE_SQUARE_SIZE * NUM_COLUMNS); i += TILE_SQUARE_SIZE) {
+                if (tileIndex >= (NUM_ROWS * NUM_COLUMNS)) {
+                    break;
+                }
+                nextval = tileNumbers[tileIndex];
+                CCNodeExt eachNode = new CCNodeExt();
                 eachNode.setContentSize(tile.getContentSize());
                 //
                 //Layout Node based on calculated postion
@@ -135,17 +154,17 @@ public class GameLayer extends CCLayer{
                 eachNode.setNodeText(nextval + "");
 
                 //Add Tile number
-                CCBitmapFontAtlas tileNumber = CCBitmapFontAtlas.bitmapFontAtlas ("00", "bionic.fnt");
+                CCBitmapFontAtlas tileNumber = CCBitmapFontAtlas.bitmapFontAtlas("00", "bionic.fnt");
                 tileNumber.setScale(1.4f);
 
                 eachNode.setScale(scalefactor);
-                eachNode.addChild(tile,1,1);
+                eachNode.addChild(tile, 1, 1);
                 tileNumber.setString(nextval + "");
-                eachNode.addChild(tileNumber,2 );
+                eachNode.addChild(tileNumber, 2);
 
-                if( nextval != 0){
-                    tilesNode.addChild(eachNode,1,nextval);
-                }else {
+                if (nextval != 0) {
+                    tilesNode.addChild(eachNode, 1, nextval);
+                } else {
                     emptyPosition = CGPoint.ccp(i, j);
                 }
 
@@ -153,8 +172,94 @@ public class GameLayer extends CCLayer{
                 tileIndex++;
             }
         }
-//
+
     }
+
+    @Override
+    public boolean ccTouchesBegan(MotionEvent event)
+    {
+        //Get touch location cordinates
+        CGPoint location = CCDirector.sharedDirector().convertToGL(CGPoint.ccp(event.getX(), event.getY()));
+        CGRect spritePos ;
+
+        CCNode tilesNode = (CCNode) getChildByTag(TILE_NODE_TAG) ;
+        //ccMacros.CCLOG("Began", "Began : " + location.x + " :  "  );
+
+        //We loop through each of the tiles and get its cordinates
+        for (int i = 1 ; i < (NUM_ROWS * NUM_COLUMNS); i++){
+            CCNodeExt eachNode = (CCNodeExt) tilesNode.getChildByTag(i) ;
+
+            //we construct a rectangle covering the current tiles cordinates
+            spritePos = CGRect.make(
+                    eachNode.getPosition().x - (eachNode.getContentSize().width*generalscalefactor/2.0f),
+                    eachNode.getPosition().y - (eachNode.getContentSize().height*generalscalefactor/2.0f),
+                    eachNode.getContentSize().width*generalscalefactor   ,
+                    eachNode.getContentSize().height*generalscalefactor   );
+            //Check if the user's touch falls inside the current tiles cordinates
+            if(spritePos.contains(location.x, location.y)){
+                //ccMacros.CCLOG("Began Touched Node", "Began touched : " + eachNode.getNodeText());
+                slideCallback(eachNode); // if yes, we pass the tile for sliding.
+
+            }
+        }
+
+        return true ;
+    }
+
+
+    public void slideCallback(CCNodeExt thenode) {
+
+        CGPoint nodePosition = thenode.getPosition();
+
+        //Determine the position to slide the tile to .. ofcourse only if theres an empty space beside it
+
+        if((nodePosition.x - TILE_SQUARE_SIZE)== emptyPosition.x && nodePosition.y == emptyPosition.y){
+            slideTile("Left", thenode,true);
+        }else if((nodePosition.x + TILE_SQUARE_SIZE) == emptyPosition.x && nodePosition.y == emptyPosition.y){
+            slideTile("Right", thenode,true);
+        }else if((nodePosition.x)== emptyPosition.x && nodePosition.y == (emptyPosition.y  + TILE_SQUARE_SIZE )){
+            slideTile("Down", thenode,true);
+        }else if((nodePosition.x )== emptyPosition.x && nodePosition.y == (emptyPosition.y  - TILE_SQUARE_SIZE)){
+            slideTile("Up", thenode,true);
+        }else{
+            slideTile("Unmovable", thenode,false);
+        }
+
+    }
+
+
+    public void slideTile(String direction, CCNodeExt thenode, boolean move){
+        CCBitmapFontAtlas moveslabel = (CCBitmapFontAtlas) getChildByTag(MOVES_LABEL_TAG);
+
+        if(move && !gameover){
+            //  Increment the moves label and animate the tile
+            moves ++ ;
+            moveslabel.setString("Moves : " + CCFormatter.format("%03d", moves ));
+
+            //Update statuslabel
+            statusLabel.setString("Tile : " + thenode.getNodeText() + " -> " + direction);
+
+            //Animate the tile to slide it
+            CGPoint nodePosition = thenode.getPosition();
+            CGPoint tempPosition = emptyPosition ;
+            CCMoveTo movetile = CCMoveTo.action(0.4f, tempPosition);
+            CCSequence movetileSeq = CCSequence.actions(movetile, CCCallFuncN.action(this, "handleWin"));
+            thenode.runAction(movetileSeq);
+            emptyPosition = nodePosition ;
+
+            //Play a sound
+            appcontext = CCDirector.sharedDirector().getActivity();
+            SoundEngine.sharedEngine().playEffect(appcontext, R.raw.tileclick);
+            thenode.runAction(movetileSeq);
+        }else{
+        }
+
+    }
+
+
+
+//
+
 
 }
 
