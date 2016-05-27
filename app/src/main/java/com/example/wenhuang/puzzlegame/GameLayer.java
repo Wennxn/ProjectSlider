@@ -137,7 +137,7 @@ public class GameLayer extends CCLayer{
         //space left after adding the status label at the top
         int nextval;
 
-        int[] tileNumbers = {1,2,3,4,5,6,7,0,8};  //random but solvable sequence of numbers
+        int[] tileNumbers = {5,1,2,8,7,6,0,4,3};  //random but solvable sequence of numbers
 
         //TILE_SQUARE_SIZE = (int) ((screenSize.height  *generalscalefactor)/NUM_ROWS) ;
         int useablewidth = (int) (screenSize.width - statusLabel.getContentSize().width * generalscalefactor);
